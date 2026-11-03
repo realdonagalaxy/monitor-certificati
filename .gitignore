@@ -1,0 +1,8 @@
+csr/
+*.xlsx
+config.ini
+__pycache__/
+.DS_Store
+.segreto_sessione
+.venv/
+backup_excel/

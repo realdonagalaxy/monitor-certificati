@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14284b">
+<title>Monitoraggio Certificati Sanità</title>
+<style>
+:root{
+  --navy:#14284b;--navy2:#1d3a6b;--bg:#eef1f6;--card:#fff;--tx:#18222f;--mut:#5f6b7d;--bd:#dde3ec;--row:#f6f8fb;
+  --acc:#1d4ed8;--pj:#e6eaf0;
+  --crit:#b42318;--critbg:#fdecea;--warn:#a15c07;--warnbg:#fef3dc;--ok:#146c43;--okbg:#e4f4ea;--nd:#6b7686;--ndbg:#edf0f4;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#0e1522;--card:#17202f;--tx:#e6ebf3;--mut:#9aa6b8;--bd:#273348;--row:#1b2638;--pj:#243248;--acc:#7ea3ff;
+  --crit:#ff9b92;--critbg:#3a1d1f;--warn:#f0bd62;--warnbg:#38290f;--ok:#6fd49c;--okbg:#14301f;--nd:#a3adbd;--ndbg:#253047}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.top{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:calc(18px + env(safe-area-inset-top)) 20px 56px}
+.top-in{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.hdr-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.who{font-size:12.5px;opacity:.85}
+.out{font:inherit;font-size:13px;font-weight:600;color:#fff;background:none;border:1px solid rgba(255,255,255,.3);border-radius:9px;padding:7px 12px;cursor:pointer}
+.out:hover{background:rgba(255,255,255,.14)}
+.acq{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:8px 14px;border-radius:9px;white-space:nowrap}
+.acq:hover{background:rgba(255,255,255,.24)}
+.top-in,.wrap{max-width:1400px;margin:0 auto}
+.top h1{margin:0;font-size:20px;font-weight:650;letter-spacing:.01em}
+.top .sub{opacity:.95;font-size:14px;margin-top:4px}
+.wrap{padding:0 20px 28px;margin-top:-40px}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.k{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;border-top:3px solid var(--bd);box-shadow:0 1px 2px rgba(10,25,50,.06)}
+.k b{display:block;font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
+.k span{color:var(--mut);font-size:12px}
+.k.c{border-top-color:var(--crit)}.k.c b{color:var(--crit)}
+.k.w{border-top-color:var(--warn)}.k.w b{color:var(--warn)}
+.k.o{border-top-color:var(--ok)}.k.o b{color:var(--ok)}
+.k.t{border-top-color:var(--navy2)}
+.tabs{display:flex;gap:4px;margin:18px 0 0;border-bottom:1px solid var(--bd)}
+.tab{font:inherit;font-weight:600;color:var(--mut);background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;cursor:pointer;margin-bottom:-1px}
+.tab.on{color:var(--acc);border-bottom-color:var(--acc)}
+.tab small{background:var(--ndbg);color:var(--nd);border-radius:999px;padding:1px 8px;margin-left:6px;font-size:12px}
+.viewbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}
+.viewbar .seg{margin:0}
+.vact{display:flex;gap:8px;margin:0 0 0 auto}
+.viewbar+.panel,.viewbar~.panel{margin-top:14px}
+.seg{display:flex;gap:6px;margin:16px 0 0;background:var(--ndbg);padding:4px;border-radius:12px;width:fit-content;max-width:100%}
+.seg button{font:inherit;font-weight:650;border:0;background:none;color:var(--mut);padding:9px 16px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.seg button small{font-size:12px;border-radius:999px;padding:1px 8px;background:var(--card);color:var(--mut)}
+.seg button.on{background:var(--card);color:var(--tx);box-shadow:0 1px 3px rgba(10,25,50,.18)}
+.seg button.on.sc{color:var(--crit)}.seg button.on.sc small{background:var(--critbg);color:var(--crit)}
+.seg button.on.ok{color:var(--ok)}.seg button.on.ok small{background:var(--okbg);color:var(--ok)}
+@media(max-width:760px){.vact{width:100%}.vact #zipbtn{flex:1}.seg{width:100%}.seg button{flex:1;justify-content:center;padding:9px 6px;font-size:14px}}
+.tools{display:flex;gap:8px;margin:14px 0;justify-content:flex-start}
+input,select,button.r{font:inherit;padding:9px 12px;border:1px solid var(--bd);border-radius:9px;background:var(--card);color:var(--tx)}
+button.r{cursor:pointer;font-weight:600}
+button.r.pri{background:var(--navy2);border-color:var(--navy2);color:#fff;box-shadow:0 1px 2px rgba(10,25,50,.25);padding:9px 16px}
+button.r.pri:hover{background:var(--navy);border-color:var(--navy)}
+@media(prefers-color-scheme:dark){button.r.pri{background:#2f5fc4;border-color:#2f5fc4}button.r.pri:hover{background:#3a6ad8;border-color:#3a6ad8}}
+.panel{background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow-x:auto;box-shadow:0 1px 2px rgba(10,25,50,.06)}
+table{border-collapse:collapse;width:100%}
+th,td{padding:10px 10px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+th{background:var(--row);font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;cursor:pointer;white-space:nowrap;user-select:none}
+th.s::after{content:attr(data-d);margin-left:4px}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--row)}
+td.u{word-break:break-word;max-width:340px;min-width:150px}
+td.n{white-space:nowrap;font-variant-numeric:tabular-nums}
+.mut{color:var(--mut);font-size:12px}
+td.first{font-weight:700}
+@media(min-width:761px){td.first{background:var(--pj);border-left:4px solid var(--navy2);border-right:1px solid var(--bd)}tbody tr:hover td.first{background:var(--pj)}}
+td.first .mut{font-weight:400}
+tr.pjh{display:none}
+tbody tr.gs td{border-top:2px solid var(--bd)}
+tbody tr.gs:first-child td{border-top:0}
+tbody tr:hover td.first{background:var(--pj)}
+.nd{color:var(--mut)}
+.badge{display:inline-block;padding:3px 11px;border-radius:999px;font-weight:650;font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.bad{background:var(--critbg);color:var(--crit)}.warn{background:var(--warnbg);color:var(--warn)}.ok{background:var(--okbg);color:var(--ok)}.ndb{background:var(--ndbg);color:var(--nd)}
+.act{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-start;min-width:150px}
+.csrst{font-size:12.5px;width:100%;text-align:left;word-break:break-word}
+.ric{color:var(--ok)}
+.csrst a{color:var(--acc);font-weight:600;text-decoration:none}
+.btn{font:inherit;font-size:13px;font-weight:600;padding:5px 11px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--acc);cursor:pointer;white-space:nowrap}
+.btn.ico{padding:5px 10px;display:inline-flex;align-items:center;gap:2px}
+.btn.del{color:var(--crit)}
+.btn:hover{border-color:var(--acc)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:9;max-width:90vw}
+dialog{border:1px solid var(--bd);border-radius:14px;background:var(--card);color:var(--tx);padding:22px;width:min(420px,92vw);box-shadow:0 20px 50px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(10,20,40,.55)}
+dialog h2{margin:0 0 4px;font-size:18px}
+.fld{display:block;margin-top:14px;font-size:13px;color:var(--mut);font-weight:600}
+.fld input{display:block;width:100%;margin-top:5px;font-weight:400;color:var(--tx)}
+.dact{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.btn.pri{background:var(--acc);color:#fff;border-color:var(--acc)}
+.rete{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.rete.rup{background:#dbe6fb;color:#1a3a7a}
+.rete.pub{background:var(--ndbg);color:var(--nd)}
+@media(prefers-color-scheme:dark){.rete.rup{background:#1f3158;color:#a9c3ff}}
+.altro{margin-top:7px}
+.altro-b{display:inline-block;background:#fde6d2;color:#9a4a0a;border:1px solid #f3b987;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700}
+.altro-n{font-size:12.5px;color:var(--mut);margin-top:4px;font-style:italic}
+tbody tr.alt td:not(.first){background:#fff4ea}
+tbody tr.alt td.calt{box-shadow:inset 4px 0 0 #ed7d31}
+@media(prefers-color-scheme:dark){.altro-b{background:#47290f;color:#ffc58f;border-color:#7a4a1f}tbody tr.alt td:not(.first){background:#2a2016}}
+@media(max-width:760px){tbody tr.alt{background:#fff4ea;box-shadow:inset 4px 0 0 #ed7d31}tbody tr.alt td{background:none!important;box-shadow:none!important}}
+.ul{padding:1px 0;word-break:break-all}
+.btn.more{font-size:12.5px;padding:4px 10px}
+#dlgurl{width:min(620px,94vw);max-height:84vh;display:none;flex-direction:column}
+#dlgurl[open]{display:flex}
+.uhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.uhead h2{margin:0;font-size:18px}
+.chip{display:inline-block;background:var(--ndbg);color:var(--nd);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;margin-top:6px}
+.xbtn{border:0;background:none;color:var(--mut);font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
+.ulist{list-style:none;margin:12px 0 0;padding:0;overflow:auto;border:1px solid var(--bd);border-radius:10px;counter-reset:u}
+.ulist li{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--bd);counter-increment:u}
+.ulist li:last-child{border-bottom:0}
+.ulist li::before{content:counter(u);color:var(--mut);font-size:12px;min-width:24px;text-align:right;font-variant-numeric:tabular-nums}
+.ulist li:nth-child(even){background:var(--row)}
+.ulist code{flex:1;font:13px ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+.ulist .btn{padding:3px 9px;font-size:12px}
+.uact{display:flex;gap:8px;margin-top:12px}
+.uact input{flex:1;min-width:0}
+.zc{border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin-top:12px}
+.zc h3{margin:0;font-size:15px;word-break:break-all}
+.zrow{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:3px 0}
+.zrow span:first-child{color:var(--mut)}
+.zrow span:last-child{text-align:right;word-break:break-word}
+.zbig{display:flex;align-items:center;gap:10px;margin:8px 0}
+.zbig b{font-size:20px;font-variant-numeric:tabular-nums}
+.zupd{margin-top:10px;border:1px solid var(--bd);border-radius:10px;padding:12px;background:var(--row)}
+.dact[hidden]{display:none}
+.zupd-t{font-size:14px;margin-bottom:2px}
+.zopt{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--bd);font-size:13.5px;cursor:pointer}
+.zopt:first-of-type{margin-top:8px}
+.zopt.gia{opacity:.6;cursor:default}
+.zopt input{margin-top:3px}
+.sost{display:inline-block;margin-top:2px;font-size:14px}
+.sost s{color:var(--crit)}
+.sost b{color:var(--ok)}
+.frec{color:var(--mut)}
+.zesito{font-size:13.5px;margin-top:8px}
+.zesito .ck{margin-top:6px}
+.zmatch{margin-top:8px;font-size:13px;padding:8px 10px;border-radius:8px;background:var(--row)}
+.zmatch.diff{background:var(--warnbg);color:var(--warn)}
+#dlgzip{width:min(560px,94vw);max-height:88vh;overflow:auto}
+.lnk{font:inherit;font-size:12.5px;font-weight:600;color:var(--acc);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;text-align:left;word-break:break-word}
+#dlgcsr{width:min(600px,94vw);max-height:88vh;overflow:auto}
+a.btn{text-decoration:none;display:inline-block}
+.cs{margin-top:14px}
+.cs h3{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+.cs .zrow{border-bottom:1px solid var(--bd);padding:6px 0}
+.cs .zrow:last-child{border-bottom:0}
+.mono{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+.ck{display:flex;gap:8px;align-items:flex-start;padding:9px 11px;border-radius:9px;font-size:13.5px;margin-top:8px}
+.ck.ok{background:var(--okbg);color:var(--ok)}.ck.ko{background:var(--critbg);color:var(--crit)}.ck.wa{background:var(--warnbg);color:var(--warn)}
+.mchi{margin-top:14px;border:1px solid #f3b987;background:#fff4ea;border-radius:10px;padding:10px 12px;display:grid;gap:10px}
+.chiri-l{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:#9a4a0a;font-weight:700;margin-bottom:4px}
+.chipn{display:inline-block;background:var(--navy2);color:#fff;border-radius:8px;padding:3px 11px;font-weight:650;font-size:14px;margin:0 6px 4px 0}
+.mbox{background:var(--row);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;font-size:14px}
+.mcorpo{white-space:pre-wrap}
+#dlgmail{width:min(560px,94vw);max-height:88vh;overflow:auto}
+@media(prefers-color-scheme:dark){.mchi{background:#2a2016;border-color:#7a4a1f}.chiri-l{color:#ffc58f}}
+.foot{text-align:center;color:var(--mut);font-size:12px;padding:14px}
+@media(max-width:760px){
+  .top{padding-left:16px;padding-right:16px}.wrap{padding:0 14px 24px}
+  .kpi{grid-template-columns:repeat(3,1fr)}.k.t{grid-column:1/-1}.k{padding:10px 11px}.k b{font-size:22px}
+  .tab{flex:1;padding:10px 6px;font-size:14px}
+  .tools{flex-wrap:wrap}.tools select{flex:1}
+  thead{display:none}
+  table,tbody{display:block}
+  tr{display:block;padding:12px 14px;border-bottom:1px solid var(--bd)}
+  tbody tr:last-child{border-bottom:0}
+  td{display:flex;justify-content:space-between;gap:14px;padding:3px 0;border:0;text-align:right;max-width:none!important}
+  td::before{content:attr(data-l);color:var(--mut);font-size:12px;text-align:left;flex:none;padding-top:2px}
+  td.first,td:empty{display:none}
+  tr.pjh{display:block;padding:0;border-bottom:0;background:var(--pj);border-left:4px solid var(--navy2)}
+  tr.pjh td{display:block;text-align:left;font-weight:700;font-size:15.5px;padding:10px 14px}
+  tr.pjh td::before{display:none}
+  tbody tr.gs td{border-top:0}
+}
+</style>
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <div><h1>Monitoraggio Certificati Sanità</h1>
+  <div class="sub" id="sub">Caricamento…</div></div>
+  <div class="hdr-r"><span class="who" id="who"></span><button class="out" id="out" title="Esci">Esci</button>
+  <a class="acq" href="https://www.actalis.com/it/dashboard" target="_blank" rel="noopener noreferrer" title="Apri la dashboard Actalis per acquistare i certificati">
+    Acquista certificati
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>
+  </a></div>
+</div></div>
+<div class="wrap">
+  <div class="kpi" id="kpi"></div>
+  <div class="tabs" id="tabs"></div>
+  <div class="viewbar"><div class="seg" id="seg"></div>
+  <div class="vact"><button class="r pri" id="zipbtn" title="Leggi la scadenza di un certificato da uno ZIP">Verifica certificato (ZIP)</button><button class="r" id="ref" title="Ricarica i dati">↻</button></div></div>
+  <div class="panel"><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
+  <div class="foot">Dati in sola lettura dal file Excel · i certificati già scaduti non sono mostrati</div>
+</div>
+<dialog id="dlg"><form method="dialog" id="frm">
+  <h2>Carica CSR</h2>
+  <p class="mut" id="dlgsub"></p>
+  <label class="fld">File CSR<input type="file" id="dfile" accept=".csr,.pem,.txt" required></label>
+  <label class="fld">Data di ricezione<input type="date" id="ddata" required></label>
+  <div class="dact"><button type="button" class="btn" id="dann">Annulla</button><button type="submit" class="btn pri" id="dok">Carica</button></div>
+</form></dialog>
+<dialog id="dlgzip">
+  <div class="uhead"><div><h2>Verifica certificato</h2><div class="mut">Carica lo ZIP ricevuto: leggo la data di scadenza dei certificati contenuti. Le chiavi private non vengono lette.</div></div>
+  <button class="xbtn" id="zclose" aria-label="Chiudi">&times;</button></div>
+  <label class="fld">File ZIP<input type="file" id="zfile" accept=".zip"></label>
+  <div id="zres"></div>
+</dialog>
+<dialog id="dlgcsr">
+  <div class="uhead"><div><h2>Contenuto della CSR</h2><div class="mut" id="csub"></div></div>
+  <button class="xbtn" id="cclose" aria-label="Chiudi">&times;</button></div>
+  <div id="cbody"></div>
+  <div class="dact"><a class="btn" id="cdl" href="#" download>Scarica CSR</a><button class="btn pri" id="cok">Chiudi</button></div>
+</dialog>
+<dialog id="dlgmail">
+  <div class="uhead"><div><h2>Promemoria CSR</h2><div class="mut" id="msub"></div></div>
+  <button class="xbtn" id="mclose" aria-label="Chiudi">&times;</button></div>
+  <div class="mchi" id="mchi"></div>
+  <div class="cs"><h3>Oggetto</h3><div class="mbox" id="mogg"></div></div>
+  <div class="cs"><h3>Testo del messaggio</h3><div class="mbox mcorpo" id="mcorpo"></div></div>
+  <div class="dact"><button class="btn" id="mann">Annulla</button><button class="btn" id="mcopy">Copia testo</button><button class="btn pri" id="mout">Apri in Outlook</button></div>
+</dialog>
+<dialog id="dlgurl">
+  <div class="uhead"><div><h2 id="utit"></h2><div class="mut" id="ucn"></div><span class="chip" id="ucnt"></span></div>
+  <button class="xbtn" id="uclose" aria-label="Chiudi">&times;</button></div>
+  <div class="uact"><input type="search" id="uq" placeholder="Filtra gli URL…"><button class="btn" id="ucopy">Copia tutti</button></div>
+  <ul class="ulist" id="ulist"></ul>
+</dialog>
+<script>
+const VISTE={
+  siti:{titolo:"Certificati siti",foglio:"Certificati da rinnovare",cols:[
+    ["progetto","Progetto"],["common_name","Common Name"],["rete","Rete"],["url","URL"],["scadenza","Scadenza"],["giorni","Giorni"],["csr","CSR"]]},
+  app:{titolo:"Certificati applicativi",foglio:"Certificati Coop Applicativi",cols:[
+    ["progetto","Erogatore"],["fruitore","Fruitore"],["common_name","Common Name"],["rete","Rete"],["emissione","Emissione"],["scadenza","Scadenza"],["giorni","Giorni"],["fornitore","Fornitore"],["csr","CSR"]]}
+};
+const SOGLIA=60; // giorni: entro questa soglia il certificato è "in scadenza"
+let fase="scad";
+let dati=[],vista="siti",ord={k:"giorni",asc:true};
+const $=s=>document.querySelector(s);
+const stato=g=>g===null?"nd":g<=30?"bad":g<=90?"warn":"ok";
+const fdata=s=>s?s.split("-").reverse().join("/"):"—";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SUFFISSO=".rsr.rupar.puglia.it";
+function reteDi(d){return (d.common_name||"").replace(/\s*\(.*?\)\s*$/,"").trim().toLowerCase().endsWith(SUFFISSO)?"Rete Rupar":"Internet Pubblica"}
+function evidenzia(t){const e=esc(t);return e.split(SUFFISSO).join("<b>"+SUFFISSO+"</b>")}
+function listaUrl(d){
+  const out=[];
+  (d.url||"").split("\n").map(x=>x.trim()).filter(Boolean).forEach(riga=>{
+    const parti=riga.split(/,\s*/);
+    (parti.length>1&&parti.every(p=>/^[\w.*:\/-]+$/.test(p))?parti:[riga]).forEach(u=>{if(!out.includes(u))out.push(u)});
+  });
+  return out;
+}
+const ndx='<span class="nd">—</span>';
+const vivo=d=>d.giorni===null||d.giorni>=0;
+async function carica(){
+  $("#sub").textContent="Caricamento…";
+  try{
+    const r=await fetch("/api/dati");if(r.status===401){location.replace("/login");return}
+    const j=await r.json();
+    if(j.errore)throw new Error(j.errore);
+    dati=j.righe;dati.forEach(d=>d.rete=reteDi(d));
+    $("#sub").textContent=`Inviato in data ${j.modificato} · ${j.file}`;
+    disegna();
+  }catch(e){$("#sub").textContent="Errore: "+e.message}
+}
+function cella(d,k,i,label){
+  const f=i===0?" first":"";
+  if(k==="giorni"){const st=stato(d.giorni);
+    const g=d.giorni===null?"—":d.giorni===0?"Oggi":`${d.giorni} gg`;
+    return `<td class="n" data-l="${label}"><span class="badge ${st==="nd"?"ndb":st}">${g}</span></td>`}
+  if(k==="csr"&&d.altro_ufficio)return `<td data-l="CSR"><span class="mut">Non a carico nostro</span></td>`;
+  if(k==="csr"&&!d.csr&&!(d.giorni!==null&&d.giorni<=60))return `<td data-l="CSR"></td>`;
+  if(k==="csr"){
+    const st=d.csr?`<span class="ric">CSR ricevuta il ${esc(d.csr.ricevuta||d.csr.data)}</span>`:"";
+    return `<td data-l="CSR"><div class="act">${st?`<div class="csrst">${st}</div>`:""}
+      ${d.csr?`<button class="btn ico" data-csrinfo="${d.id}" title="Visualizza il contenuto della CSR" aria-label="Visualizza il contenuto della CSR"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><circle cx="11" cy="14" r="2.2"/><path d="m12.8 15.8 2 2"/></svg></button>`:""}
+      ${(!d.csr&&d.giorni!==null&&d.giorni<=60)?`<button class="btn ico" data-up="${d.id}" title="${d.csr?"Sostituisci CSR":"Carica CSR"}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg><span>&nbsp;Upload</span></button>`:""}
+      ${d.csr?`<button class="btn ico del" data-del="${d.id}" title="Rimuovi la CSR caricata" aria-label="Rimuovi CSR"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg></button>`:""}
+      ${d.csr?"":`<button class="btn ico" data-mail="${d.id}" title="Invia promemoria CSR con Outlook" aria-label="Invia promemoria CSR"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></button>`}</div></td>`}
+  if(k==="scadenza"||k==="emissione"){
+    const alt=k==="scadenza"&&d.altre_date&&d.altre_date.length?`<div class="mut">altre: ${d.altre_date.map(fdata).join(", ")}</div>`:"";
+    return `<td class="n" data-l="${label}">${fdata(d[k])}${alt}</td>`}
+  const extra=k==="common_name"&&d.tipo?`<div class="mut">${esc(d.tipo)}</div>`:"";
+  if(k==="url"){
+    const L=listaUrl(d),MAX=1;
+    if(!L.length)return `<td class="u" data-l="${label}">${ndx}</td>`;
+    const vis=L.length>MAX?"":L.map(u=>`<div class="ul">${esc(u)}</div>`).join("");
+    const più=L.length>MAX?`<button class="btn more" data-urls="${d.id}">Vedi tutti gli URL (${L.length})</button>`:"";
+    return `<td class="u" data-l="${label}"><div>${vis}${più}</div></td>`}
+  if(k==="rete")return `<td data-l="${label}"><span class="rete ${d.rete==="Rete Rupar"?"rup":"pub"}">${d.rete}</span></td>`;
+  const v=(k==="common_name"?evidenzia(d[k]||""):esc(d[k]||"")).replace(/\n/g,"<br>");
+  const altro=k==="common_name"&&d.altro_ufficio?`<div class="altro"><span class="altro-b">Acquisto a cura di altro ufficio</span>${d.nota?`<div class="altro-n">${esc(d.nota)}</div>`:""}</div>`:"";
+  return `<td class="${k==="url"?"u":""}${f}${k==="common_name"&&d.altro_ufficio?" calt":""}" data-l="${label}"><span>${v||ndx}${extra}${altro}</span></td>`;
+}
+function disegna(){
+  const V=VISTE[vista];
+  $("#tabs").innerHTML=Object.entries(VISTE).map(([id,v])=>{
+    const n=dati.filter(d=>d.foglio===v.foglio&&vivo(d)).length;
+    return `<button class="tab ${id===vista?"on":""}" data-v="${id}">${v.titolo}<small>${n}</small></button>`}).join("");
+  document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{vista=b.dataset.v;ord={k:"giorni",asc:true};disegna()});
+  $("#th").innerHTML="<tr>"+V.cols.map(([k,t])=>`<th data-k="${k}" class="${ord.k===k?"s":""}" data-d="${ord.asc?"▲":"▼"}">${t}</th>`).join("")+"</tr>";
+  document.querySelectorAll("th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(k==="csr")return;
+    ord=ord.k===k?{k,asc:!ord.asc}:{k,asc:true};disegna()});
+  const q="";
+  const base=dati.filter(d=>d.foglio===V.foglio&&vivo(d));
+  const inScad=d=>d.giorni!==null&&d.giorni<=SOGLIA;
+  const nS=base.filter(inScad).length,nO=base.length-nS;
+  $("#seg").innerHTML=`<button class="sc ${fase==="scad"?"on":""}" data-f="scad">In scadenza (entro ${SOGLIA} gg)<small>${nS}</small></button><button class="ok ${fase==="ok"?"on":""}" data-f="ok">Non in scadenza<small>${nO}</small></button>`;
+  document.querySelectorAll("#seg button").forEach(b=>b.onclick=()=>{fase=b.dataset.f;disegna()});
+  const basef=base.filter(d=>fase==="scad"?inScad(d):!inScad(d));
+  let v=basef.filter(d=>(!q||[d.progetto,d.fruitore,d.url,d.common_name,d.tipo,d.pm,d.fornitore,d.rete].join(" ").toLowerCase().includes(q)));
+  const {k,asc}=ord;
+  v.sort((a,b)=>{let x=a[k],y=b[k];if(x===null||x==="")return 1;if(y===null||y==="")return -1;
+    return (x>y?1:x<y?-1:0)*(asc?1:-1)});
+  const gruppi=[],idx={};
+  v.forEach(d=>{const n=d.progetto||"\u2014";if(!(n in idx)){idx[n]=gruppi.length;gruppi.push([])}gruppi[idx[n]].push(d)});
+  $("#tb").innerHTML=gruppi.map(g=>{
+    const n=g.length,nome=esc(g[0].progetto||"\u2014");
+    return `<tr class="pjh"><td colspan="${V.cols.length}">${nome}<span class="mut"> \u00b7 ${n} ${n===1?"certificato":"certificati"}</span></td></tr>`+
+      g.map((d,j)=>"<tr class=\""+(j===0?"gs ":"")+(d.altro_ufficio?"alt":"")+"\">"+V.cols.map(([k,t],i)=>{
+        if(i===0)return j===0?cella(d,k,i,t).replace("<td ",`<td rowspan="${n}" `):"";
+        return cella(d,k,i,t)}).join("")+"</tr>").join("")}).join("")
+    ||`<tr><td colspan="${V.cols.length}" class="nd">Nessun risultato</td></tr>`;
+  const c={bad:0,warn:0,ok:0,nd:0};base.forEach(d=>c[stato(d.giorni)]++);
+  $("#kpi").innerHTML=`<div class="k t"><b>${base.length}</b><span>Certificati monitorati</span></div>
+    <div class="k c"><b>${c.bad}</b><span>Entro 30 giorni</span></div>
+    <div class="k w"><b>${c.warn}</b><span>31–90 giorni</span></div>
+    <div class="k o"><b>${c.ok}</b><span>Oltre 90 giorni</span></div>`;
+}
+function avviso(t){const e=document.createElement("div");e.className="toast";e.textContent=t;document.body.append(e);setTimeout(()=>e.remove(),3500)}
+$("#tb").addEventListener("click",async e=>{
+  const ci=e.target.closest("[data-csrinfo]");
+  if(ci){apriCsr(ci.dataset.csrinfo);return}
+  const uu=e.target.closest("[data-urls]");
+  if(uu){apriUrl(uu.dataset.urls);return}
+  const up=e.target.closest("[data-up]");
+  if(up){apriModale(up.dataset.up);return}
+  const x=e.target.closest("[data-del]");
+  if(x){const d=dati.find(r=>r.id===x.dataset.del);
+    if(!d||!confirm(`Rimuovere la CSR "${d.csr.nome}"?`))return;
+    try{const r=await fetch("/api/csr/"+d.id,{method:"DELETE"});if(!r.ok)throw new Error("rimozione non riuscita");
+      d.csr=null;avviso("CSR rimossa");disegna()}catch(err){avviso("Errore: "+err.message)}
+    return}
+  const b=e.target.closest("[data-mail]");if(!b)return;
+  const d=dati.find(x=>x.id===b.dataset.mail);if(d)apriMail(d);
+});
+let mailCorr=null;
+function testoMail(d){
+  const dominio=(d.common_name||d.url).replace(/\s*\(.*?\)\s*$/,"").trim();
+  return {oggetto:`Richiesta CSR per il dominio ${dominio}`,
+    corpo:`Buongiorno,\nil certificato del dominio ${dominio} \u00e8 in scadenza il ${d.scadenza?fdata(d.scadenza):"data da definire"}, pertanto si richiede la CSR per poter procedere al rinnovo.`};
+}
+function apriMail(d){
+  mailCorr=d;const t=testoMail(d);
+  const chip=(v)=>v?v.split(/,\s*/).map(x=>`<span class="chipn">${esc(x)}</span>`).join(""):'<span class="nd">Non indicato nel file</span>';
+  $("#msub").textContent=(d.progetto?d.progetto+" \u00b7 ":"")+(d.common_name||"");
+  $("#mchi").innerHTML=`<div class="chiri"><div class="chiri-l">PM InnovaPuglia</div><div>${chip(d.pm)}</div></div>
+    <div class="chiri"><div class="chiri-l">CSR da produrre a cura di</div><div>${chip(d.csr_da||d.fornitore)}</div></div>`;
+  $("#mogg").textContent=t.oggetto;$("#mcorpo").textContent=t.corpo;
+  $("#dlgmail").showModal();
+}
+async function inviaOutlook(){
+  const d=mailCorr;if(!d)return;const t=testoMail(d);
+  try{const r=await fetch("/api/outlook/"+d.id,{method:"POST"});
+    if(r.ok){avviso("Apertura di Outlook\u2026");$("#dlgmail").close();return}
+    if(r.status!==403)throw new Error((await r.json()).errore);
+  }catch(err){return avviso("Errore: "+err.message)}
+  const q="subject="+encodeURIComponent(t.oggetto)+"&body="+encodeURIComponent(t.corpo);
+  location.href=/iPhone|iPad/.test(navigator.userAgent)?"ms-outlook://compose?"+q:"mailto:?"+q;
+}
+$("#mout").onclick=inviaOutlook;
+$("#mcopy").onclick=()=>{const t=testoMail(mailCorr);copia(t.oggetto+"\n\n"+t.corpo)};
+$("#mclose").onclick=$("#mann").onclick=()=>$("#dlgmail").close();
+function nomeDom(t){return (t||"").replace(/\s*\(.*?\)\s*$/,"").trim().toLowerCase()}
+function disegnaZip(certs){
+  $("#zres").innerHTML=certs.map(c=>{
+    const st=stato(c.giorni),g=c.giorni<0?`scaduto da ${-c.giorni} gg`:c.giorni===0?"scade oggi":`${c.giorni} gg`;
+    const nomi=[c.common_name,...c.san].map(nomeDom);
+    const m=dati.filter(d=>nomi.includes(nomeDom(d.common_name)));
+    let conf="";
+    if(!c.valido){
+      conf=`<div class="zmatch diff">${c.ca?"Certificato CA/intermedio":"Certificato non valido (scaduto o non ancora in vigore)"}: la scadenza nell'Excel non viene aggiornata.</div>`;
+    }else if(m.length){
+      const uno=m.length===1;
+      const auto=false;
+      conf=`<div class="zupd" data-token="${esc(c.token)}" data-nuova="${c.scadenza}" ${auto?'data-auto="1"':""}>
+        <div class="zupd-t">Scadenza da aggiornare nell'Excel</div>
+        <div class="mut">${uno?"Common Name trovato nell'Excel. Controlla la sostituzione e conferma:":"Più righe hanno questo Common Name: seleziona quelle rinnovate, poi conferma."}</div>
+        ${m.map(d=>`<label class="zopt${d.scadenza===c.scadenza?" gia":""}"><input type="checkbox" value="${d.id}" ${uno&&d.scadenza!==c.scadenza?"checked":""} ${d.scadenza===c.scadenza?"disabled":""}>
+          <span><b>${esc(d.progetto||"\u2014")}</b> \u00b7 ${esc(d.common_name)}<br><span class="sost">${d.scadenza===c.scadenza?`${fdata(d.scadenza)} <span class="mut">(gi\u00e0 aggiornata)</span>`:`<s>${fdata(d.scadenza)}</s> <span class="frec">\u2192</span> <b>${fdata(c.scadenza)}</b>`}</span></span></label>`).join("")}
+        <div class="dact" ${auto?'hidden':""}><button class="btn pri zgo">Conferma e aggiorna Excel</button></div>
+        <div class="zesito"></div></div>`;
+    }else conf=`<div class="zmatch">Nessun Common Name corrispondente in tabella</div>`;
+    return `<div class="zc"><h3>${esc(c.common_name||"(senza Common Name)")}${c.ca?' <span class="mut">\u00b7 CA / intermedio</span>':""}</h3>
+      <div class="zbig"><b>${fdata(c.scadenza)}</b><span class="badge ${st==="nd"?"ndb":st}">${g}</span></div>
+      <div class="zrow"><span>Emesso il</span><span>${fdata(c.emissione)}</span></div>
+      <div class="zrow"><span>Emittente</span><span>${esc(c.emittente||"\u2014")}</span></div>
+      ${c.san.length?`<div class="zrow"><span>SAN</span><span>${c.san.map(esc).join("<br>")}</span></div>`:""}
+      <div class="zrow"><span>File</span><span>${esc(c.file)}</span></div>${conf}</div>`}).join("");
+}
+$("#zipbtn").onclick=()=>{$("#zfile").value="";$("#zres").innerHTML="";$("#dlgzip").showModal()};
+$("#zres").addEventListener("click",async e=>{
+  const go=e.target.closest(".zgo");if(!go)return;
+  const box=go.closest(".zupd"),ids=[...box.querySelectorAll("input:checked")].map(i=>i.value),out=box.querySelector(".zesito");
+  if(!ids.length){out.innerHTML='<div class="ck wa">Seleziona almeno una riga.</div>';return}
+  go.disabled=true;out.textContent="Aggiornamento in corso\u2026";
+  try{
+    const r=await fetch("/api/excel/scadenza",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:box.dataset.token,ids})});
+    if(r.status===401){location.replace("/login");return}
+    const j=await r.json();if(!r.ok)throw new Error(j.errore);
+    out.innerHTML=j.aggiornati.map(a=>`<div class="ck ok">\u2713 ${esc(a.progetto||"")} \u00b7 ${esc(a.common_name)}: ${fdata(a.vecchia)} \u2192 <b>${fdata(a.nuova)}</b></div>`).join("")+
+      j.bloccati.map(b=>`<div class="ck wa">\u26a0 ${esc(b.progetto||"")} \u00b7 ${esc(b.common_name)}: ${esc(b.motivo)}</div>`).join("")+
+      (j.backup?`<div class="mut" style="margin-top:6px">Copia di sicurezza del file prima della modifica: ${esc(j.backup)}</div>`:"");
+    box.querySelectorAll("input:checked").forEach(i=>{i.disabled=true});
+    const nota=box.querySelector(".zupd-t+.mut");if(nota)nota.textContent=j.aggiornati.length?"Excel aggiornato.":"Nessuna modifica effettuata.";
+    box.querySelector(".dact").hidden=true;
+    carica();
+  }catch(err){out.innerHTML=`<div class="ck ko">${esc(err.message)}</div>`;go.disabled=false}
+});
+$("#zclose").onclick=()=>$("#dlgzip").close();
+$("#zfile").addEventListener("change",async e=>{
+  const f=e.target.files[0];if(!f)return;
+  if(f.size>10485760)return $("#zres").innerHTML='<div class="zmatch diff">File troppo grande (max 10 MB)</div>';
+  $("#zres").innerHTML='<div class="zmatch">Lettura in corso\u2026</div>';
+  try{
+    const r=await fetch("/api/zip",{method:"POST",body:f}),j=await r.json();
+    if(!r.ok)throw new Error(j.errore);
+    disegnaZip(j.certificati);
+  }catch(err){$("#zres").innerHTML=`<div class="zmatch diff">${esc(err.message)}</div>`}
+});
+fetch("/api/utente").then(r=>r.json()).then(j=>{if(j.email)$("#who").textContent=j.email}).catch(()=>{});
+$("#out").onclick=async()=>{await fetch("/api/logout",{method:"POST"});location.replace("/login")};
+async function apriCsr(id){
+  const d=dati.find(x=>x.id===id);if(!d)return;
+  $("#csub").textContent=(d.progetto?d.progetto+" \u00b7 ":"")+(d.common_name||"")+(d.csr?" \u00b7 file: "+d.csr.nome:"");
+  $("#cdl").href="/api/csr/"+id;$("#cdl").setAttribute("download",d.csr?d.csr.nome:"richiesta.csr");
+  $("#cbody").innerHTML='<div class="zmatch">Lettura in corso\u2026</div>';
+  $("#dlgcsr").showModal();
+  try{
+    const r=await fetch("/api/csr/"+id+"/info");if(r.status===401){location.replace("/login");return}
+    const c=await r.json();if(!r.ok)throw new Error(c.errore);
+    const attesi=[nomeDom(d.common_name)];
+    const coincide=attesi.includes(nomeDom(c.common_name))||c.san.some(x=>attesi.includes(nomeDom(x.valore)));
+    const righe=a=>a.map(x=>`<div class="zrow"><span>${esc(x.campo||x.tipo)}</span><span>${esc(x.valore)}</span></div>`).join("");
+    $("#cbody").innerHTML=
+      `<div class="ck ${coincide?"ok":"wa"}">${coincide?"\u2713 Il Common Name della CSR corrisponde a quello in tabella":"\u26a0 Il Common Name della CSR (<b>"+esc(c.common_name||"\u2014")+"</b>) non corrisponde a quello in tabella"}</div>`+
+      `<div class="ck ${c.firma_valida?"ok":"ko"}">${c.firma_valida?"\u2713 Firma della richiesta valida":"\u2717 Firma della richiesta NON valida"}</div>`+
+      c.avvisi.map(a=>`<div class="ck wa">\u26a0 ${esc(a)}</div>`).join("")+
+      `<div class="cs"><h3>Soggetto</h3>${righe(c.soggetto)||'<div class="nd">\u2014</div>'}</div>`+
+      `<div class="cs"><h3>Nomi alternativi (SAN)</h3>${righe(c.san)||'<div class="nd">Nessuno</div>'}</div>`+
+      `<div class="cs"><h3>Chiave e firma</h3>
+        <div class="zrow"><span>Tipo di chiave</span><span>${esc(c.chiave)}${c.bit?" \u00b7 "+c.bit+" bit":""}</span></div>
+        <div class="zrow"><span>Algoritmo di firma</span><span>${esc(c.firma)}</span></div>
+        <div class="zrow"><span>Impronta chiave pubblica (SHA-256)</span><span class="mono">${esc(c.impronta)}</span></div></div>`;
+  }catch(err){$("#cbody").innerHTML=`<div class="ck ko">${esc(err.message)}</div>`}
+}
+$("#cclose").onclick=$("#cok").onclick=()=>$("#dlgcsr").close();
+let urlCorr=[];
+function disegnaUrl(){
+  const q=$("#uq").value.toLowerCase();
+  const v=urlCorr.filter(u=>u.toLowerCase().includes(q));
+  $("#ulist").innerHTML=v.map(u=>`<li><code>${esc(u)}</code><button class="btn" data-copy="${esc(u)}">Copia</button></li>`).join("")||'<li class="nd">Nessun URL</li>';
+  $("#ucnt").textContent=v.length===urlCorr.length?`${urlCorr.length} URL`:`${v.length} di ${urlCorr.length} URL`;
+}
+function apriUrl(id){
+  const d=dati.find(x=>x.id===id);if(!d)return;
+  urlCorr=listaUrl(d);
+  $("#utit").textContent=d.progetto||"URL";$("#ucn").textContent=d.common_name||"";$("#uq").value="";
+  disegnaUrl();$("#dlgurl").showModal();
+}
+async function copia(t){try{await navigator.clipboard.writeText(t);avviso("Copiato")}catch{avviso("Copia non disponibile su questa connessione")}}
+$("#uq").addEventListener("input",disegnaUrl);
+$("#uclose").onclick=()=>$("#dlgurl").close();
+$("#dlgurl").addEventListener("click",e=>{if(e.target.id==="dlgurl")e.target.close();const c=e.target.closest("[data-copy]");if(c)copia(c.dataset.copy)});
+$("#ucopy").onclick=()=>copia(urlCorr.join("\n"));
+let uploadId=null;
+function apriModale(id){
+  const d=dati.find(x=>x.id===id);if(!d)return;uploadId=id;
+  $("#dlgsub").textContent=(d.common_name||d.url)+(d.csr?" \u2013 sostituir\u00e0 la CSR gi\u00e0 caricata":"");
+  $("#dfile").value="";
+  const t=new Date();$("#ddata").value=new Date(t-t.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  $("#dlg").showModal();
+}
+$("#dann").onclick=()=>$("#dlg").close();
+$("#frm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const f=$("#dfile").files[0];if(!f)return;
+  if(f.size>262144)return avviso("File troppo grande (max 256 KB)");
+  $("#dok").disabled=true;
+  try{
+    const r=await fetch("/api/csr/"+uploadId,{method:"POST",headers:{"X-Nome-File":f.name,"X-Data-Ricezione":$("#ddata").value},body:await f.text()});
+    const j=await r.json();if(!r.ok)throw new Error(j.errore);
+    const d=dati.find(x=>x.id===uploadId);if(d)d.csr=j;
+    $("#dlg").close();avviso("CSR caricata: "+j.nome);disegna();
+  }catch(err){avviso("Errore: "+err.message)}
+  finally{$("#dok").disabled=false}
+});
+$("#ref").onclick=carica;
+carica();
+setInterval(carica,600000);
+</script>
+</body>
+</html>
