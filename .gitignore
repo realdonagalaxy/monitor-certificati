@@ -6,3 +6,4 @@ __pycache__/
 .segreto_sessione
 .venv/
 backup_excel/
+excel_scelto.xlsx

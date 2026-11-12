@@ -31,7 +31,7 @@ from cryptography.x509.oid import ExtensionOID, NameOID
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
-from scadenze import CONFIG, NC, a_data, trova_file
+from scadenze import CONFIG, FILE_SCELTO, NC, a_data, trova_file
 
 CARTELLA = Path(__file__).resolve().parent
 PORTA = 8765
@@ -265,8 +265,8 @@ def aggiorna_scadenze(token, ids):
     nuova = datetime.strptime(cert["s"], "%Y-%m-%d").date()
     if nuova < date.today():
         raise ValueError("Il certificato è scaduto")
-    if not NC.get("percorso_locale", "").strip():
-        raise ValueError("Aggiornamento possibile solo con il file Excel locale (percorso_locale)")
+    if not FILE_SCELTO.exists() and not NC.get("percorso_locale", "").strip():
+        raise ValueError("Aggiornamento possibile solo con un file Excel locale (percorso_locale o file scelto)")
     nomi = {nome_dominio(n) for n in cert["n"]}
     gruppi = {r["id"]: r for r in leggi()["righe"]}
     scelti = []
@@ -516,7 +516,15 @@ def leggi():
             })
     modificato = datetime.fromtimestamp(Path(file_excel).stat().st_mtime).strftime("%d/%m/%Y %H:%M")
     righe = raggruppa(righe)
-    return {"file": Path(file_excel).name, "modificato": modificato, "aggiornato": datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "righe": righe}
+    return {"scelto": FILE_SCELTO.exists(), "file": Path(file_excel).name, "modificato": modificato, "aggiornato": datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "righe": righe}
+
+
+EXCEL_MAX = 20 * 1024 * 1024
+
+
+def leggi_riassunto():
+    d = leggi()
+    return {"file": d["file"], "righe": len(d["righe"])}
 
 
 def ip_lan():
@@ -675,6 +683,24 @@ class H(BaseHTTPRequestHandler):
             except Exception as e:
                 registra_errore("aggiornamento Excel")
                 return self.rispondi(500, {"errore": f"Errore durante il salvataggio ({type(e).__name__}: {e}). Dettagli in errori.log"})
+        if self.path.split("?")[0] == "/api/excel/scegli":
+            n = int(self.headers.get("Content-Length") or 0)
+            if n <= 0 or n > EXCEL_MAX:
+                return self.rispondi(413, {"errore": "File vuoto o troppo grande (max 20 MB)"})
+            corpo = self.rfile.read(n)
+            tmp = FILE_SCELTO.with_suffix(".tmp")
+            try:
+                tmp.write_bytes(corpo)
+                load_workbook(tmp, data_only=True).close()  # deve essere un .xlsx valido
+            except Exception:
+                tmp.unlink(missing_ok=True)
+                return self.rispondi(400, {"errore": "Il file non è un Excel .xlsx valido"})
+            tmp.replace(FILE_SCELTO)
+            try:
+                return self.rispondi(200, leggi_riassunto())
+            except Exception as e:
+                FILE_SCELTO.unlink(missing_ok=True)
+                return self.rispondi(400, {"errore": f"Il file non ha il formato atteso: {e}"})
         if self.path.split("?")[0] == "/api/zip":
             n = int(self.headers.get("Content-Length") or 0)
             if n <= 0 or n > ZIP_MAX:
@@ -725,6 +751,9 @@ class H(BaseHTTPRequestHandler):
     def do_DELETE(self):
         if not self.autorizzato():
             return self.nega()
+        if self.path.split("?")[0] == "/api/excel/scegli":
+            FILE_SCELTO.unlink(missing_ok=True)  # torna al file di config.ini
+            return self.rispondi(200, {"ok": True})
         m = re.fullmatch(r"/api/csr/([0-9a-f]{12})", self.path.split("?")[0])
         if not m:
             return self.rispondi(404, {"errore": "non trovato"})

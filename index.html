@@ -130,7 +130,7 @@ tbody tr.alt td.calt{box-shadow:inset 4px 0 0 #ed7d31}
 .zbig{display:flex;align-items:center;gap:10px;margin:8px 0}
 .zbig b{font-size:20px;font-variant-numeric:tabular-nums}
 .zupd{margin-top:10px;border:1px solid var(--bd);border-radius:10px;padding:12px;background:var(--row)}
-.dact[hidden]{display:none}
+.dact[hidden],.vact [hidden]{display:none}
 .zupd-t{font-size:14px;margin-bottom:2px}
 .zopt{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--bd);font-size:13.5px;cursor:pointer}
 .zopt:first-of-type{margin-top:8px}
@@ -196,7 +196,7 @@ a.btn{text-decoration:none;display:inline-block}
   <div class="kpi" id="kpi"></div>
   <div class="tabs" id="tabs"></div>
   <div class="viewbar"><div class="seg" id="seg"></div>
-  <div class="vact"><button class="r pri" id="zipbtn" title="Leggi la scadenza di un certificato da uno ZIP">Verifica certificato (ZIP)</button><button class="r" id="ref" title="Ricarica i dati">↻</button></div></div>
+  <div class="vact"><button class="r pri" id="zipbtn" title="Leggi la scadenza di un certificato da uno ZIP">Verifica certificato (ZIP)</button><button class="r" id="xlbtn" title="Scegli il file Excel da leggere">Scegli Excel</button><button class="r" id="xlreset" title="Torna al file indicato in config.ini" hidden>Ripristina file</button><input type="file" id="xlfile" accept=".xlsx" hidden><button class="r" id="ref" title="Ricarica i dati">↻</button></div></div>
   <div class="panel"><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
   <div class="foot">Dati in sola lettura dal file Excel · i certificati già scaduti non sono mostrati</div>
 </div>
@@ -268,6 +268,7 @@ async function carica(){
     if(j.errore)throw new Error(j.errore);
     dati=j.righe;dati.forEach(d=>d.rete=reteDi(d));
     $("#sub").textContent=`Inviato in data ${j.modificato} · ${j.file}`;
+    $("#xlreset").hidden=!j.scelto;
     disegna();
   }catch(e){$("#sub").textContent="Errore: "+e.message}
 }
@@ -436,6 +437,21 @@ $("#zfile").addEventListener("change",async e=>{
     disegnaZip(j.certificati);
   }catch(err){$("#zres").innerHTML=`<div class="zmatch diff">${esc(err.message)}</div>`}
 });
+$("#xlbtn").onclick=()=>$("#xlfile").click();
+$("#xlfile").addEventListener("change",async e=>{
+  const f=e.target.files[0];e.target.value="";if(!f)return;
+  if(!/\.xlsx$/i.test(f.name))return alert("Scegli un file Excel .xlsx");
+  if(f.size>20971520)return alert("File troppo grande (max 20 MB)");
+  $("#sub").textContent="Caricamento del file…";
+  try{
+    const r=await fetch("/api/excel/scegli",{method:"POST",body:f});
+    if(r.status===401){location.replace("/login");return}
+    const j=await r.json();if(!r.ok)throw new Error(j.errore);
+    localStorage.setItem("xlScelto","1");
+    await carica();
+  }catch(err){alert(err.message);carica()}
+});
+$("#xlreset").onclick=async()=>{await fetch("/api/excel/scegli",{method:"DELETE"});localStorage.removeItem("xlScelto");await carica()};
 fetch("/api/utente").then(r=>r.json()).then(j=>{if(j.email)$("#who").textContent=j.email}).catch(()=>{});
 $("#out").onclick=async()=>{await fetch("/api/logout",{method:"POST"});location.replace("/login")};
 async function apriCsr(id){

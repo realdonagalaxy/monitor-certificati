@@ -12,6 +12,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 CARTELLA = Path(__file__).resolve().parent
+FILE_SCELTO = CARTELLA / "excel_scelto.xlsx"  # copia del file scelto dall'interfaccia (ha la precedenza)
 CONFIG = configparser.ConfigParser()
 CONFIG.read(CARTELLA / "config.ini")
 NC = CONFIG["nextcloud"] if CONFIG.has_section("nextcloud") else {}
@@ -19,7 +20,9 @@ GIORNI_PREAVVISO = CONFIG.getint("avvisi", "giorni_preavviso", fallback=15)
 
 
 def trova_file():
-    """Restituisce il percorso del file Excel (locale sincronizzato o scaricato da Nextcloud)."""
+    """Restituisce il percorso del file Excel (scelto dall'interfaccia, locale sincronizzato o scaricato da Nextcloud)."""
+    if FILE_SCELTO.exists():
+        return FILE_SCELTO
     locale = NC.get("percorso_locale", "").strip()
     if locale:
         return Path(locale).expanduser()
